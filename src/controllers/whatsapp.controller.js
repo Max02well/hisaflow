@@ -1,6 +1,7 @@
 import { prisma } from '../services/prisma.service.js';
 import { aiService } from '../services/ai.service.js';
 import { whatsappService } from '../services/whatsapp.service.js';
+import { sessionService } from '../services/session.service.js';
 
 export const whatsappController = {
 
@@ -170,6 +171,8 @@ export const whatsappController = {
         }
 
         await whatsappService.sendProductList(from, products);
+        // After sending product list, save state
+        sessionService.set(from, { step: 'AWAITING_SELECTION' })
         return res.sendStatus(200);
       }
 
