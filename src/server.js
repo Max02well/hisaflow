@@ -11,6 +11,7 @@ import inventoryRoutes from './routes/inventory.routes.js';
 // import orderRoutes from './routes/order.routes.js';
 
 const app = express()
+app.set('trust proxy', 1);
 
 // Security middleware
 app.use(helmet())
@@ -22,7 +23,9 @@ app.use(cors({
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
 })
 app.use('/api/', limiter)
 
