@@ -23,67 +23,82 @@ export const whatsappController = {
 
       let text = message.text?.body?.toLowerCase();
 
+      //PRODUCT SELECTION FIRST
+      if (message.interactive?.type === 'list_reply') {
+        const productId = message.interactive.list_reply.id;
+        let result;
+        try {
+          result = await prisma.$transaction(async (tx) => {
+            const product = await tx.product.findUnique({
+              where: { id: productId }
+            });
+            if (!product || product.stock <= 0) {
+              throw new Error("OUT_OF_STOCK");
+            }
+
+            // if (!product || product.stock <= 0) {
+            //   await whatsappService.sendText(from, "❌ Product out of stock.");
+            //   return res.sendStatus(200);
+            // }
+
+            // Create order
+            const order = await tx.order.create({
+              data: {
+                customer: from,
+                total: product.price,
+                status: "PENDING",
+                items: {
+                  create: [{
+                    productId: product.id,
+                    quantity: 1,
+                    price: product.price
+                  }]
+                }
+              }
+            });
+
+            // Reserve stock
+            await tx.product.update({
+              where: { id: product.id },
+              data: { stock: { decrement: 1 } }
+            });
+
+            await tx.inventoryLog.create({
+              data: {
+                productId: product.id,
+                action: "RESERVED",
+                quantity: 1
+              }
+            });
+            return { order, product };
+          });
+        } catch (err) {
+          if (err.message === "OUT_OF_STOCK") {
+            await whatsappService.sendText(from, "❌ Product out of stock.");
+            return res.sendStatus(200);
+          }
+
+          console.error(err);
+          return res.sendStatus(200);
+        }
+
+        const paymentLink = `https://your-payment-link.com/pay/${result.order.id}`;
+
+        await whatsappService.sendText(
+          from,
+          `🧾 Order created for *${result.product.name}*\n💰 Amount: KES ${result.product.price}\n\n👉 Pay here:\n${paymentLink}`
+        );
+
+        return res.sendStatus(200);
+      }
+
       // Handle interactive messages (buttons/lists)
       if (message.interactive) {
         const interactive = message.interactive;
-
         // if (interactive.type === 'list_reply') {
         //   text = interactive.list_reply.title.toLowerCase();
         // }
-        // 🔥 HANDLE PRODUCT SELECTION FIRST
-            if (message.interactive?.type === 'list_reply') {
-              const productId = message.interactive.list_reply.id;
-              const result = await prisma.$transaction(async (tx) => {
-              const product = await tx.product.findUnique({
-                where: { id: productId }
-              });
 
-              if (!product || product.stock <= 0) {
-                await whatsappService.sendText(from, "❌ Product out of stock.");
-                return res.sendStatus(200);
-              }
-
-              // Create order
-              const order = await tx.order.create({
-                data: {
-                  customer: from,
-                  total: product.price,
-                  status: "PENDING",
-                  items: {
-                    create: [{
-                      productId: product.id,
-                      quantity: 1,
-                      price: product.price
-                    }]
-                  }
-                }
-              });
-
-              // Reserve stock
-              await tx.product.update({
-                where: { id: product.id },
-                data: { stock: { decrement: 1 } }
-              });
-
-              await tx.inventoryLog.create({
-                data: {
-                  productId: product.id,
-                  action: "RESERVED",
-                  quantity: 1
-                }
-              });
-              return { order, product };
-              });
-
-              const paymentLink = `https://your-payment-link.com/pay/${result.order.id}`;
-
-              await whatsappService.sendText(
-                from,
-                `🧾 Order created for *${result.product.name}*\n💰 Amount: KES ${result.product.price}\n\n👉 Pay here:\n${paymentLink}`
-              );
-
-              return res.sendStatus(200);
-            }
 
         if (interactive.type === 'button_reply') {
           text = interactive.button_reply.id.toLowerCase();
