@@ -23,6 +23,8 @@ export const whatsappController = {
 
       let text = message.text?.body?.toLowerCase();
 
+      const GREETINGS = ['hi', 'hello', 'hey', 'start', 'menu']
+        
       //PRODUCT SELECTION FIRST
       if (message.interactive?.type === 'list_reply') {
         const productId = message.interactive.list_reply.id;
@@ -104,6 +106,13 @@ export const whatsappController = {
           text = interactive.button_reply.id.toLowerCase();
         }
       }
+      // Greetings
+      if (GREETINGS.some(g => text.startsWith(g))) {
+          await whatsappService.sendText(from,
+            `👋 Welcome to HisaFlow!\n\nReply with:\n• *catalog* — browse products\n• *orders* — view your orders\n• *help* — get support`
+          )
+          return res.sendStatus(200);
+        }
 
       if (!text || typeof text !== 'string') {
         return res.sendStatus(200);
@@ -118,6 +127,28 @@ export const whatsappController = {
         await whatsappService.sendProductList(from, products);
         return res.sendStatus(200);
       }
+      
+      // Orders
+      if (text === 'orders' || text === 'my orders') {
+          const orders = await prisma.order.findMany({
+            where: { customerPhone: from },
+            orderBy: { createdAt: 'desc' },
+            take: 3,
+            include: { items: { include: { product: true } } }
+          })
+
+          if (!orders.length) {
+            await whatsappService.sendText(from, "You have no orders yet.")
+            return res.sendStatus(200)
+          }
+
+          const summary = orders.map(o =>
+            `🧾 Order #${o.id.slice(-6)}\n   Status: ${o.status}\n   Total: KES ${o.total}`
+          ).join('\n\n')
+
+          await whatsappService.sendText(from, `Your recent orders:\n\n${summary}`)
+          return res.sendStatus(200)
+        }
 
       // AI intent
       if (text.includes('want') || text.includes('buy')) {
