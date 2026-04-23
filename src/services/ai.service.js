@@ -13,15 +13,15 @@ export const aiService = {
         {
           role: "system",
           content: `
-Extract product intent from user message.
-Return JSON:
-{
-  "product": string,
-  "budget": number|null,
-  "color": string|null,
-  "action": "search|buy"
-}
-`
+        Extract product intent from user message.
+        Return JSON:
+        {
+        "product": string,
+        "budget": number|null,
+        "color": string|null,
+        "action": "search|buy"
+        }
+        `
         },
         { role: "user", content: text }
       ],

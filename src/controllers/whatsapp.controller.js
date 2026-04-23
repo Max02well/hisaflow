@@ -3,6 +3,7 @@ import { aiService } from '../services/ai.service.js';
 import { whatsappService } from '../services/whatsapp.service.js';
 
 export const whatsappController = {
+
   async handleIncomingMessage(req, res) {
     try {
       const body = req.body;
@@ -26,9 +27,63 @@ export const whatsappController = {
       if (message.interactive) {
         const interactive = message.interactive;
 
-        if (interactive.type === 'list_reply') {
-          text = interactive.list_reply.title.toLowerCase();
-        }
+        // if (interactive.type === 'list_reply') {
+        //   text = interactive.list_reply.title.toLowerCase();
+        // }
+        // 🔥 HANDLE PRODUCT SELECTION FIRST
+            if (message.interactive?.type === 'list_reply') {
+              const productId = message.interactive.list_reply.id;
+              const result = await prisma.$transaction(async (tx) => {
+              const product = await tx.product.findUnique({
+                where: { id: productId }
+              });
+
+              if (!product || product.stock <= 0) {
+                await whatsappService.sendText(from, "❌ Product out of stock.");
+                return res.sendStatus(200);
+              }
+
+              // Create order
+              const order = await tx.order.create({
+                data: {
+                  customer: from,
+                  total: product.price,
+                  status: "PENDING",
+                  items: {
+                    create: [{
+                      productId: product.id,
+                      quantity: 1,
+                      price: product.price
+                    }]
+                  }
+                }
+              });
+
+              // Reserve stock
+              await tx.product.update({
+                where: { id: product.id },
+                data: { stock: { decrement: 1 } }
+              });
+
+              await tx.inventoryLog.create({
+                data: {
+                  productId: product.id,
+                  action: "RESERVED",
+                  quantity: 1
+                }
+              });
+              return { order, product };
+              });
+
+              const paymentLink = `https://your-payment-link.com/pay/${result.order.id}`;
+
+              await whatsappService.sendText(
+                from,
+                `🧾 Order created for *${result.product.name}*\n💰 Amount: KES ${result.product.price}\n\n👉 Pay here:\n${paymentLink}`
+              );
+
+              return res.sendStatus(200);
+            }
 
         if (interactive.type === 'button_reply') {
           text = interactive.button_reply.id.toLowerCase();
@@ -57,7 +112,7 @@ export const whatsappController = {
           where: {
             stock: { gt: 0 },
             name: {
-              contains: intent.product?.split(' ')[0],
+              contains: intent.product?.split(' ')[0] || '',
               mode: "insensitive"
             }
           }
@@ -75,7 +130,7 @@ export const whatsappController = {
       // fallback
       await whatsappService.sendText(
         from,
-        "Hi 👋 Send *catalog* to view products or type what you want."
+        "Hi 👋 Type *catalog* to view our products."
       );
 
       return res.sendStatus(200);
