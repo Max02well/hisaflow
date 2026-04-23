@@ -8,12 +8,20 @@ export const whatsappController = {
   async handleIncomingMessage(req, res) {
     const body = req.body;
     if (body.object === 'whatsapp_business_account') {
-      const message = body.entry[0].changes[0].value.messages?.[0];
+      // const message = body.entry[0].changes[0].value.messages?.[0];
+      const entry = body.entry?.[0];
+      const changes = entry?.changes?.[0];
+      const value = changes?.value;
+      const message = value?.messages?.[0];
+
       if (!message) return res.sendStatus(200);
 
       const from = message.from; // WhatsApp number
-      const text = message.text?.body?.toLowerCase() ?? ''
-      if (!text) return res.sendStatus(200) // ignore non-text messages
+      const text = message.text?.body?.toLowerCase();
+
+        if (!text || typeof text !== 'string') {
+          return res.sendStatus(200);
+        }
 
       // Example commands
       if (text === 'stock' || text === 'catalog') {
