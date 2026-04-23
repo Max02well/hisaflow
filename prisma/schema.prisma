@@ -1,0 +1,173 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  password      String
+  name          String
+  role          UserRole  @default(MANAGER)
+  whatsappNumber String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  products      Product[]
+  inventoryLogs InventoryLog[]
+}
+
+model Product {
+  id          String       @id @default(uuid())
+  name        String
+  description String?
+  price       Float
+  stock       Int          @default(0)
+  imageUrl    String?
+  imagePublicId String?
+  category    String?
+  sku         String?      @unique
+  barcode     String?
+  minStock    Int          @default(5)
+  maxStock    Int?
+  location    String?
+  userId      String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id])
+  inventoryLogs InventoryLog[]
+  orderItems    OrderItem[]
+  reservations  Reservation[]
+}
+
+model InventoryLog {
+  id        String   @id @default(uuid())
+  productId String
+  action     InventoryAction
+  previousStock Int?
+  newStock    Int?
+  reason      String?
+  userId      String
+  quantity  Int
+  timestamp DateTime @default(now())
+
+  product   Product  @relation(fields: [productId], references: [id])
+  user        User         @relation(fields: [userId], references: [id])
+}
+
+model Order {
+  id         String      @id @default(uuid())
+  orderNumber String       @unique
+  customer   String      // WhatsApp number (e.g. "254712345678")
+  customerName String?
+  total      Float
+  status     OrderStatus  @default(PENDING) // PENDING, PAID, SHIPPED, CANCELLED
+  paymentStatus PaymentStatus @default(UNPAID)
+  paymentMethod String?
+  paymentId    String?
+  notes       String?
+
+  createdAt  DateTime    @default(now())
+  updatedAt   DateTime     @updatedAt
+  items      OrderItem[]
+}
+
+model OrderItem {
+  id         String   @id @default(uuid())
+  orderId    String
+  productId  String
+  quantity   Int
+  price      Float
+  subtotal   Float
+  
+  order      Order    @relation(fields: [orderId], references: [id])
+  product    Product  @relation(fields: [productId], references: [id])
+}
+
+model Reservation {
+  id         String    @id @default(uuid())
+  productId  String
+  customer   String    // WhatsApp number
+  quantity   Int
+  expiresAt  DateTime
+  createdAt  DateTime  @default(now())
+  
+  product    Product   @relation(fields: [productId], references: [id])
+}
+
+model Conversation {
+  id          String    @id @default(uuid())
+  customer    String    // WhatsApp number
+  lastMessage String?
+  lastMessageAt DateTime @default(now())
+  status      ConversationStatus @default(ACTIVE)
+  context     Json?     // Store conversation context
+  
+  messages    Message[]
+}
+
+model Message {
+  id          String    @id @default(uuid())
+  conversationId String
+  direction   MessageDirection // INCOMING or OUTGOING
+  type        MessageType     // TEXT, IMAGE, INTERACTIVE
+  content     String
+  metadata    Json?
+  sentAt      DateTime  @default(now())
+  
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+}
+
+enum ConversationStatus {
+  ACTIVE
+  RESOLVED
+  BLOCKED
+}
+
+enum MessageDirection {
+  INCOMING
+  OUTGOING
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  INTERACTIVE
+  TEMPLATE
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+  REFUNDED
+  FAILED
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  STAFF
+}
+
+enum InventoryAction {
+  ADD
+  REMOVE
+  RESERVED
+  RELEASED
+  ADJUSTMENT
+  BULK_UPLOAD
+}
