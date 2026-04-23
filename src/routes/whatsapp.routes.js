@@ -1,6 +1,6 @@
 import express from 'express';
-import { whatsappController } from '../controllers/whatsapp.controller';
-import { env } from '../config/env';
+import { whatsappController } from '../controllers/whatsapp.controller.js';
+import { env } from '../config/env.js';
 
 const router = express.Router();
 

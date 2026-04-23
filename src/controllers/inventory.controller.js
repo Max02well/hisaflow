@@ -1,5 +1,6 @@
-import { Request, Response } from 'express';
-import { prisma } from '../services/prisma.service';
+import pkg from 'express';
+const { Request, Response } = pkg;
+import { prisma } from '../services/prisma.service.js';
 
 export const inventoryController = {
   async createProduct(req, res) {

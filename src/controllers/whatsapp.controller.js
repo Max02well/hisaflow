@@ -1,7 +1,8 @@
-import { Request, Response } from 'express';
-import { prisma } from '../services/prisma.service';
-import { aiService } from '../services/ai.service';
-import { whatsappService } from '../services/whatsapp.service';
+import pkg from 'express';
+const { Request, Response } = pkg;
+import { prisma } from '../services/prisma.service.js';
+// import { aiService } from '../services/ai.service.js';
+import { whatsappService } from '../services/whatsapp.service.js';
 
 export const whatsappController = {
   async handleIncomingMessage(req, res) {
@@ -11,7 +12,8 @@ export const whatsappController = {
       if (!message) return res.sendStatus(200);
 
       const from = message.from; // WhatsApp number
-      const text = message.text?.body.toLowerCase();
+      const text = message.text?.body?.toLowerCase() ?? ''
+      if (!text) return res.sendStatus(200) // ignore non-text messages
 
       // Example commands
       if (text === 'stock' || text === 'catalog') {
