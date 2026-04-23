@@ -141,13 +141,17 @@ export const whatsappController = {
                   throw new Error('OUT_OF_STOCK')
                 }
 
+                const orderNumber = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`
+
                 const order = await tx.order.create({
                   data: {
+                    orderNumber,
                     customer: from,
                     total: product.price,
                     status: 'PENDING',
+                    paymentStatus: 'UNPAID',
                     items: {
-                      create: [{ productId: product.id, quantity: 1, price: product.price }]
+                      create: [{ productId: product.id, quantity: 1, price: product.price,subtotal: product.price * 1, }]
                     }
                   }
                 })
@@ -158,8 +162,16 @@ export const whatsappController = {
                 })
 
                 await tx.inventoryLog.create({
-                  data: { productId: product.id, action: 'RESERVED', quantity: 1 }
-                })
+                    data: {
+                      productId: product.id,
+                      action: 'RESERVED',
+                      quantity: 1,
+                      previousStock: product.stock,
+                      newStock: product.stock - 1,
+                      reason: `WhatsApp order ${orderNumber}`,
+                      userId: env.SYSTEM_USER_ID,
+                    }
+                  })
 
                 return { order, product }
               })
@@ -180,9 +192,14 @@ export const whatsappController = {
             const paymentLink = `https://your-payment-link.com/pay/${result.order.id}`;
 
             await whatsappService.sendText(
-              from,
-              `✅ *Order Confirmed!*\n\n🧾 Order #${result.order.id.slice(-6)}\n📦 ${result.product.name}\n💰 KES ${result.product.price}\n\n👉 Complete payment here:\n${paymentLink}\n\n_Payment link expires in 30 minutes._`
-            )
+                from,
+                `✅ *Order Confirmed!*\n\n🧾 Order ${result.order.orderNumber}\n📦 ${result.product.name}\n💰 KES ${result.product.price}\n\n👉 Complete payment here:\n${paymentLink}\n\n_Payment link expires in 30 minutes._`
+              )
+
+            // await whatsappService.sendText(
+            //   from,
+            //   `✅ *Order Confirmed!*\n\n🧾 Order #${result.order.id.slice(-6)}\n📦 ${result.product.name}\n💰 KES ${result.product.price}\n\n👉 Complete payment here:\n${paymentLink}\n\n_Payment link expires in 30 minutes._`
+            // )
 
             return res.sendStatus(200)
           }

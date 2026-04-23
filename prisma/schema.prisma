@@ -52,12 +52,12 @@ model InventoryLog {
   previousStock Int?
   newStock    Int?
   reason      String?
-  userId      String
+  userId      String?
   quantity  Int
   timestamp DateTime @default(now())
 
   product   Product  @relation(fields: [productId], references: [id])
-  user        User         @relation(fields: [userId], references: [id])
+  user        User?        @relation(fields: [userId], references: [id])
 }
 
 model Order {
