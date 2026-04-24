@@ -42,7 +42,7 @@ if (env.NODE_ENV === 'development') {
 // ── Routes ──
 app.use('/api/whatsapp', whatsappRoutes)
 app.use('/api/inventory', inventoryRoutes)
-app.use('/api/mpesa', mpesaRoutes)
+app.use('/api/payments', mpesaRoutes)
 // app.use('/api/orders', orderRoutes)
 
 // Health check
