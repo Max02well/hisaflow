@@ -23,6 +23,7 @@ export const env = {
   MPESA_CONSUMER_SECRET: process.env.MPESA_CONSUMER_SECRET,
   MPESA_PASSKEY: process.env.MPESA_PASSKEY,
   MPESA_SHORTCODE: process.env.MPESA_SHORTCODE,
+  MPESA_CALLBACK_URL: process.env.MPESA_CALLBACK_URL 
 }
 // Validation
 if (!env.WHATSAPP_ACCESS_TOKEN) {
