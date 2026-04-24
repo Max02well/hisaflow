@@ -120,7 +120,7 @@ export const whatsappController = {
 
           await whatsappService.sendText(
             from,
-            `✅ *Order Confirmed!*\n\n🧾 Order ${result.order.orderNumber}\n📦 ${result.product.name}\n💰 KES ${result.product.price}\n\n👉 Complete payment here:\n${paymentLink}\n\n_📲 Sending M-Pesa payment request to your phone...`
+            `✅ *Order Confirmed!*\n\n🧾 Order ${result.order.orderNumber}\n📦 ${result.product.name}\n💰 KES ${result.product.price}\n\n_📲 Sending M-Pesa payment request to your phone...`
           )
 
           // const paymentLink = `${env.FRONTEND_URL}/pay/${result.order.id}`
