@@ -8,6 +8,7 @@ import { env } from './config/env.js'
 // Routes
 import whatsappRoutes from './routes/whatsapp.routes.js';
 import inventoryRoutes from './routes/inventory.routes.js';
+import mpesaRoutes from './routes/mpesa.routes.js';
 // import orderRoutes from './routes/order.routes.js';
 
 const app = express()
@@ -41,6 +42,7 @@ if (env.NODE_ENV === 'development') {
 // ── Routes ──
 app.use('/api/whatsapp', whatsappRoutes)
 app.use('/api/inventory', inventoryRoutes)
+app.use('/api/mpesa', mpesaRoutes)
 // app.use('/api/orders', orderRoutes)
 
 // Health check
